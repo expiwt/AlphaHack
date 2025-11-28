@@ -10,9 +10,6 @@ services:
       POSTGRES_DB: alfabank_db
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backend/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - alfabank-network
     healthcheck:
@@ -26,8 +23,6 @@ services:
     container_name: alfabank-redis
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
     networks:
       - alfabank-network
     healthcheck:
@@ -50,10 +45,6 @@ services:
       PORT: 8000
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend/app:/app/app
-      - ./backend/models:/app/models
-      - ./data:/app/data
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,8 +73,6 @@ services:
       VITE_API_URL: http://localhost:8000/api/v1
     ports:
       - "3000:5173"
-    volumes:
-      - ./frontend/src:/app/src
     depends_on:
       - backend
     networks:
