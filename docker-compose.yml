@@ -100,10 +100,6 @@ services:
     networks:
       - alfabank-network
 
-volumes:
-  postgres_data:
-  redis_data:
-
 networks:
   alfabank-network:
     driver: bridge
