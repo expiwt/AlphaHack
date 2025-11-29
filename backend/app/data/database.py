@@ -35,18 +35,58 @@ async def init_db():
         
         logger.info("✓ Database tables created/verified")
         
-        # Миграция: переименовать client_id в id если колонка существует
+        # Миграция таблицы clients: добавляем недостающие колонки
         with engine.begin() as conn:
-            # Проверяем существует ли колонка client_id
+            # Проверяем существующие колонки
             result = conn.execute(text("""
                 SELECT column_name 
                 FROM information_schema.columns 
-                WHERE table_name = 'clients' AND column_name = 'client_id'
+                WHERE table_name = 'clients'
             """))
-            if result.fetchone():
+            existing_columns = {row[0] for row in result.fetchall()}
+            
+            logger.info(f"Существующие колонки в clients: {existing_columns}")
+            
+            # Переименовываем client_id в id если нужно
+            if 'client_id' in existing_columns and 'id' not in existing_columns:
                 logger.info("Migrating: renaming client_id to id...")
                 conn.execute(text("ALTER TABLE clients RENAME COLUMN client_id TO id"))
                 logger.info("✓ Migration completed: client_id -> id")
+                existing_columns.remove('client_id')
+                existing_columns.add('id')
+            
+            # Список необходимых колонок
+            required_columns = {
+                'id': 'VARCHAR(50)',
+                'target': 'FLOAT',
+                'incomeValue': 'FLOAT',
+                'avg_cur_cr_turn': 'FLOAT',
+                'ovrd_sum': 'FLOAT DEFAULT 0',
+                'loan_cur_amt': 'FLOAT DEFAULT 0',
+                'hdb_income_ratio': 'FLOAT',
+                'created_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
+            }
+            
+            # Добавляем недостающие колонки
+            for col_name, col_def in required_columns.items():
+                if col_name not in existing_columns:
+                    logger.info(f"Adding column {col_name}...")
+                    try:
+                        conn.execute(text(f"ALTER TABLE clients ADD COLUMN {col_name} {col_def}"))
+                        logger.info(f"✓ Column {col_name} added")
+                    except Exception as e:
+                        logger.warning(f"Could not add column {col_name}: {e}")
+            
+            # Удаляем неиспользуемые колонки
+            columns_to_drop = ['adminarea', 'city_smart_name']
+            for col_name in columns_to_drop:
+                if col_name in existing_columns:
+                    logger.info(f"Dropping column {col_name}...")
+                    try:
+                        conn.execute(text(f"ALTER TABLE clients DROP COLUMN IF EXISTS {col_name}"))
+                        logger.info(f"✓ Column {col_name} dropped")
+                    except Exception as e:
+                        logger.warning(f"Could not drop column {col_name}: {e}")
         
         # Проверяем что таблицы созданы
         with engine.connect() as conn:
@@ -55,6 +95,16 @@ async def init_db():
             ))
             tables = result.fetchall()
             logger.info(f"✓ Tables in database: {[t[0] for t in tables]}")
+            
+            # Проверяем финальную структуру clients
+            result = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'clients'
+                ORDER BY ordinal_position
+            """))
+            final_columns = [row[0] for row in result.fetchall()]
+            logger.info(f"✓ Final clients table columns: {final_columns}")
         
         # Не загружаем клиентов автоматически - они будут загружены через endpoint загрузки CSV
         logger.info("✓ Database initialized. Clients will be loaded via CSV upload endpoint.")
