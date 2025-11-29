@@ -35,6 +35,19 @@ async def init_db():
         
         logger.info("✓ Database tables created/verified")
         
+        # Миграция: переименовать client_id в id если колонка существует
+        with engine.begin() as conn:
+            # Проверяем существует ли колонка client_id
+            result = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'clients' AND column_name = 'client_id'
+            """))
+            if result.fetchone():
+                logger.info("Migrating: renaming client_id to id...")
+                conn.execute(text("ALTER TABLE clients RENAME COLUMN client_id TO id"))
+                logger.info("✓ Migration completed: client_id -> id")
+        
         # Проверяем что таблицы созданы
         with engine.connect() as conn:
             result = conn.execute(text(

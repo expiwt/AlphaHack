@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS clients (
 -- Predictions (результаты прогнозов)
 CREATE TABLE IF NOT EXISTS predictions (
     prediction_id VARCHAR(50) PRIMARY KEY,
-    client_id VARCHAR(50) NOT NULL REFERENCES clients(client_id),
+    client_id VARCHAR(50) NOT NULL REFERENCES clients(id),
     user_id INTEGER REFERENCES users(user_id),
     predicted_income FLOAT NOT NULL,
     actual_income FLOAT,
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS predictions (
 -- Recommendations
 CREATE TABLE IF NOT EXISTS recommendations (
     recommendation_id VARCHAR(50) PRIMARY KEY,
-    client_id VARCHAR(50) NOT NULL REFERENCES clients(client_id),
+    client_id VARCHAR(50) NOT NULL REFERENCES clients(id),
     prediction_id VARCHAR(50) REFERENCES predictions(prediction_id),
     product VARCHAR(100) NOT NULL,
     amount FLOAT,
@@ -63,12 +63,37 @@ CREATE INDEX idx_predictions_user_id ON predictions(user_id);
 CREATE INDEX idx_predictions_created_at ON predictions(created_at);
 CREATE INDEX idx_model_metrics_date ON model_metrics(metric_date);
 
+-- Миграция: Переименовать client_id в id если колонка client_id существует
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'clients' AND column_name = 'client_id'
+    ) THEN
+        ALTER TABLE clients RENAME COLUMN client_id TO id;
+    END IF;
+END $$;
+
 -- Миграция: Добавить новую колонку если её нет
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS hdb_income_ratio FLOAT;
 
 -- Миграция: Удалить неиспользуемые колонки (если они есть)
--- ALTER TABLE clients DROP COLUMN IF EXISTS adminarea;
--- ALTER TABLE clients DROP COLUMN IF EXISTS city_smart_name;
+DO $$ 
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'clients' AND column_name = 'adminarea'
+    ) THEN
+        ALTER TABLE clients DROP COLUMN adminarea;
+    END IF;
+    
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'clients' AND column_name = 'city_smart_name'
+    ) THEN
+        ALTER TABLE clients DROP COLUMN city_smart_name;
+    END IF;
+END $$;
 
 -- Тестовый юзер
 INSERT INTO users (email, password_hash, full_name) 
