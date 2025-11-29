@@ -24,15 +24,16 @@ class Token(BaseModel):
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 class ClientInfo(BaseModel):
-    client_id: str
-    age: int
-    gender: str
-    city: str
-    region: str
-    income_real: Optional[float] = None
-    income_predicted: Optional[float] = None
-    confidence: Optional[float] = None
-    income_category: Optional[str] = None
+    id: str
+    target: Optional[float] = None
+    incomeValue: Optional[float] = None
+    avg_cur_cr_turn: Optional[float] = None
+    ovrd_sum: Optional[float] = None
+    loan_cur_amt: Optional[float] = None
+    hdb_income_ratio: Optional[float] = None
+    risk_level: Optional[str] = None
+    recommendation: Optional[str] = None
+    reasoning: Optional[str] = None
 
 class ClientList(BaseModel):
     total: int
@@ -85,7 +86,7 @@ class DashboardStats(BaseModel):
     total_clients: int
     avg_confidence: float
     model_version: str
-    last_update: str
+    last_updated: str
     metrics: List[MetricValue]
 
 class IncomeDistribution(BaseModel):
@@ -93,9 +94,15 @@ class IncomeDistribution(BaseModel):
     count: int
     percentage: float
 
+class CreditDecisions(BaseModel):
+    approved: int
+    rejected: int
+    approval_rate: float
+
 class DashboardData(BaseModel):
     stats: DashboardStats
     income_distribution: List[IncomeDistribution]
+    credit_decisions: CreditDecisions
     recent_predictions: List[PredictionResponse]
     top_features: List[ExplanationItem]
 

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, DateTime, Integer, ForeignKey, Date
+from sqlalchemy import Column, String, Float, DateTime, Integer, ForeignKey, Date, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 
@@ -28,20 +28,17 @@ class User(Base):
 class Client(Base):
     __tablename__ = "clients"
     
-    client_id = Column(String(50), primary_key=True)
-    dt = Column(Date, nullable=True)
-    age = Column(Integer)
-    gender = Column(String(20))
-    city = Column(String(255))
-    region = Column(String(255))
-    income_real = Column(Float, nullable=True)
-    income_predicted = Column(Float, nullable=True)
-    confidence = Column(Float, nullable=True)
-    income_category = Column(String(20), nullable=True)
+    id = Column(String(50), primary_key=True)
+    target = Column(Float, nullable=True)
+    incomeValue = Column(Float, nullable=True)
+    avg_cur_cr_turn = Column(Float, nullable=True)
+    ovrd_sum = Column(Float, nullable=True, default=0.0)
+    loan_cur_amt = Column(Float, nullable=True, default=0.0)
+    hdb_income_ratio = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     def __repr__(self):
-        return f"<Client(id={self.client_id}, age={self.age})>"
+        return f"<Client(id={self.id}, incomeValue={self.incomeValue})>"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # PREDICTIONS
@@ -51,7 +48,7 @@ class Prediction(Base):
     __tablename__ = "predictions"
     
     prediction_id = Column(String(50), primary_key=True)
-    client_id = Column(String(50), ForeignKey("clients.client_id"), nullable=False)
+    client_id = Column(String(50), ForeignKey("clients.id"), nullable=False)
     predicted_income = Column(Float, nullable=False)
     confidence = Column(Float, nullable=False)
     category = Column(String(20), nullable=False)
@@ -68,7 +65,7 @@ class Recommendation(Base):
     __tablename__ = "recommendations"
     
     recommendation_id = Column(String(50), primary_key=True)
-    client_id = Column(String(50), ForeignKey("clients.client_id"), nullable=False)
+    client_id = Column(String(50), ForeignKey("clients.id"), nullable=False)
     product_type = Column(String(100), nullable=False)
     recommendation_text = Column(String(500), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

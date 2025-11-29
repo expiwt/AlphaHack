@@ -10,16 +10,13 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- Clients table (из CSV)
 CREATE TABLE IF NOT EXISTS clients (
-    client_id VARCHAR(50) PRIMARY KEY,
-    dt DATE,
-    age INTEGER,
-    gender VARCHAR(20),
-    city VARCHAR(255),
-    region VARCHAR(255),
-    income_real FLOAT,  -- Реальный доход (target)
-    income_predicted FLOAT,
-    confidence FLOAT,
-    income_category VARCHAR(20),
+    id VARCHAR(50) PRIMARY KEY,
+    target FLOAT,
+    incomeValue FLOAT,
+    avg_cur_cr_turn FLOAT,
+    ovrd_sum FLOAT DEFAULT 0,
+    loan_cur_amt FLOAT DEFAULT 0,
+    hdb_income_ratio FLOAT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -61,12 +58,17 @@ CREATE TABLE IF NOT EXISTS model_metrics (
 );
 
 -- Индексы
-CREATE INDEX idx_clients_dt ON clients(dt);
-CREATE INDEX idx_clients_city ON clients(city);
 CREATE INDEX idx_predictions_client_id ON predictions(client_id);
 CREATE INDEX idx_predictions_user_id ON predictions(user_id);
 CREATE INDEX idx_predictions_created_at ON predictions(created_at);
 CREATE INDEX idx_model_metrics_date ON model_metrics(metric_date);
+
+-- Миграция: Добавить новую колонку если её нет
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS hdb_income_ratio FLOAT;
+
+-- Миграция: Удалить неиспользуемые колонки (если они есть)
+-- ALTER TABLE clients DROP COLUMN IF EXISTS adminarea;
+-- ALTER TABLE clients DROP COLUMN IF EXISTS city_smart_name;
 
 -- Тестовый юзер
 INSERT INTO users (email, password_hash, full_name) 

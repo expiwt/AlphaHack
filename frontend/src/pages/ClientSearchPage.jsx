@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import CreditDecisionBox from '../components/CreditDecisionBox';
+import RiskBadge from '../components/RiskBadge';
 
 export default function ClientSearchPage() {
   const [clientId, setClientId] = useState('');
@@ -38,7 +40,7 @@ export default function ClientSearchPage() {
       <form onSubmit={handleSearch} className="search-form">
         <input
           type="text"
-          placeholder="Введите ID клиента (например: cli_test_001)"
+          placeholder="Введите ID клиента (например: 1)"
           value={clientId}
           onChange={(e) => setClientId(e.target.value)}
           required
@@ -51,64 +53,71 @@ export default function ClientSearchPage() {
       {error && <div className="error-message">{error}</div>}
 
       {client && (
-        <div className="client-card-detailed">
-          <h3>Информация о клиенте</h3>
-          
-          <div className="client-details">
-            <div className="detail-row">
-              <span className="detail-label">ID:</span>
-              <span className="detail-value">{client.client_id}</span>
-            </div>
+        <>
+          <div className="client-card-detailed">
+            <h3>Информация о клиенте</h3>
             
-            <div className="detail-row">
-              <span className="detail-label">Возраст:</span>
-              <span className="detail-value">{client.age} лет</span>
-            </div>
-            
-            <div className="detail-row">
-              <span className="detail-label">Пол:</span>
-              <span className="detail-value">{client.gender === 'M' ? 'Мужской' : 'Женский'}</span>
-            </div>
-            
-            <div className="detail-row">
-              <span className="detail-label">Город:</span>
-              <span className="detail-value">{client.city}</span>
-            </div>
-            
-            <div className="detail-row">
-              <span className="detail-label">Регион:</span>
-              <span className="detail-value">{client.region}</span>
-            </div>
-            
-            {client.income_real && (
-              <div className="detail-row highlight">
-                <span className="detail-label">Реальный доход:</span>
-                <span className="detail-value">{client.income_real.toLocaleString()} ₽</span>
-              </div>
-            )}
-            
-            {client.income_predicted && (
-              <div className="detail-row highlight">
-                <span className="detail-label">Прогноз дохода:</span>
-                <span className="detail-value">{client.income_predicted.toLocaleString()} ₽</span>
-              </div>
-            )}
-            
-            {client.confidence && (
+            <div className="client-details">
               <div className="detail-row">
-                <span className="detail-label">Уверенность:</span>
-                <span className="detail-value">{(client.confidence * 100).toFixed(1)}%</span>
+                <span className="detail-label">ID:</span>
+                <span className="detail-value">{client.id}</span>
               </div>
-            )}
-            
-            {client.income_category && (
-              <div className="detail-row">
-                <span className="detail-label">Категория:</span>
-                <span className="detail-value">{client.income_category}</span>
-              </div>
-            )}
+              
+              {client.target !== null && client.target !== undefined && (
+                <div className="detail-row">
+                  <span className="detail-label">Target:</span>
+                  <span className="detail-value">{client.target.toLocaleString()} ₽</span>
+                </div>
+              )}
+              
+              {client.incomeValue !== null && client.incomeValue !== undefined && (
+                <div className="detail-row highlight">
+                  <span className="detail-label">Доход:</span>
+                  <span className="detail-value">{client.incomeValue.toLocaleString()} ₽</span>
+                </div>
+              )}
+              
+              {client.avg_cur_cr_turn !== null && client.avg_cur_cr_turn !== undefined && (
+                <div className="detail-row">
+                  <span className="detail-label">Средний кредитовый оборот:</span>
+                  <span className="detail-value">{client.avg_cur_cr_turn.toLocaleString()} ₽</span>
+                </div>
+              )}
+              
+              {client.ovrd_sum !== null && client.ovrd_sum !== undefined && (
+                <div className="detail-row">
+                  <span className="detail-label">Сумма просрочки:</span>
+                  <span className="detail-value">{client.ovrd_sum.toLocaleString()} ₽</span>
+                </div>
+              )}
+              
+              {client.loan_cur_amt !== null && client.loan_cur_amt !== undefined && (
+                <div className="detail-row highlight">
+                  <span className="detail-label">Запрашиваемая сумма кредита:</span>
+                  <span className="detail-value">{client.loan_cur_amt.toLocaleString()} ₽</span>
+                </div>
+              )}
+              
+              {client.hdb_income_ratio !== null && client.hdb_income_ratio !== undefined && (
+                <div className="detail-row">
+                  <span className="detail-label">HDB Income Ratio:</span>
+                  <span className="detail-value">{client.hdb_income_ratio.toFixed(4)}</span>
+                </div>
+              )}
+              
+              {client.risk_level && (
+                <div className="detail-row">
+                  <span className="detail-label">Уровень риска:</span>
+                  <span className="detail-value">
+                    <RiskBadge riskLevel={client.risk_level} />
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+          
+          <CreditDecisionBox client={client} />
+        </>
       )}
     </div>
   );

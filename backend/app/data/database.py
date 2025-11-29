@@ -42,6 +42,9 @@ async def init_db():
             ))
             tables = result.fetchall()
             logger.info(f"✓ Tables in database: {[t[0] for t in tables]}")
+        
+        # Не загружаем клиентов автоматически - они будут загружены через endpoint загрузки CSV
+        logger.info("✓ Database initialized. Clients will be loaded via CSV upload endpoint.")
     
     except Exception as e:
         logger.error(f"❌ Database initialization error: {e}")
