@@ -19,11 +19,11 @@ def migrate_clients_table():
     """Обновляет структуру таблицы clients, добавляя недостающие колонки"""
     try:
         with engine.begin() as conn:
-            # Список всех необходимых колонок
+            # Список всех необходимых колонок (incomeValue с кавычками)
             required_columns = {
                 'id': 'VARCHAR(50)',
                 'target': 'FLOAT',
-                'incomeValue': 'FLOAT',
+                '"incomeValue"': 'FLOAT',  # С кавычками для сохранения camelCase
                 'avg_cur_cr_turn': 'FLOAT',
                 'ovrd_sum': 'FLOAT DEFAULT 0',
                 'loan_cur_amt': 'FLOAT DEFAULT 0',
@@ -38,6 +38,7 @@ def migrate_clients_table():
                 WHERE table_name = 'clients'
             """))
             existing_columns = {row[0]: row for row in result.fetchall()}
+            existing_columns_lower = {col.lower(): col for col in existing_columns.keys()}
             
             logger.info(f"Существующие колонки: {list(existing_columns.keys())}")
             
@@ -53,10 +54,27 @@ def migrate_clients_table():
                     WHERE table_name = 'clients'
                 """))
                 existing_columns = {row[0]: row for row in result.fetchall()}
+                existing_columns_lower = {col.lower(): col for col in existing_columns.keys()}
+            
+            # Переименовываем incomevalue в "incomeValue" если нужно
+            if 'incomevalue' in existing_columns_lower and 'incomeValue' not in existing_columns:
+                logger.info("Переименовываем incomevalue в incomeValue...")
+                conn.execute(text('ALTER TABLE clients RENAME COLUMN incomevalue TO "incomeValue"'))
+                logger.info("✓ incomevalue переименован в incomeValue")
+                # Обновляем список существующих колонок
+                result = conn.execute(text("""
+                    SELECT column_name, data_type, is_nullable, column_default
+                    FROM information_schema.columns 
+                    WHERE table_name = 'clients'
+                """))
+                existing_columns = {row[0]: row for row in result.fetchall()}
+                existing_columns_lower = {col.lower(): col for col in existing_columns.keys()}
             
             # Добавляем недостающие колонки
             for col_name, col_def in required_columns.items():
-                if col_name not in existing_columns:
+                # Проверяем существование колонки (учитываем регистр)
+                col_name_check = col_name.strip('"').lower()
+                if col_name_check not in existing_columns_lower and col_name not in existing_columns:
                     logger.info(f"Добавляем колонку {col_name}...")
                     try:
                         conn.execute(text(f"ALTER TABLE clients ADD COLUMN {col_name} {col_def}"))

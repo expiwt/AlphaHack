@@ -30,11 +30,11 @@ class Client(Base):
     
     id = Column(String(50), primary_key=True)
     target = Column(Float, nullable=True)
-    incomeValue = Column(Float, nullable=True)
-    avg_cur_cr_turn = Column(Float, nullable=True)
-    ovrd_sum = Column(Float, nullable=True, default=0.0)
-    loan_cur_amt = Column(Float, nullable=True, default=0.0)
-    hdb_income_ratio = Column(Float, nullable=True)
+    incomeValue = Column("incomeValue", Float, nullable=True)  # Явно указываем имя с кавычками
+    avg_cur_cr_turn = Column("avg_cur_cr_turn", Float, nullable=True)
+    ovrd_sum = Column("ovrd_sum", Float, nullable=True, default=0.0)
+    loan_cur_amt = Column("loan_cur_amt", Float, nullable=True, default=0.0)
+    hdb_income_ratio = Column("hdb_income_ratio", Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     def __repr__(self):

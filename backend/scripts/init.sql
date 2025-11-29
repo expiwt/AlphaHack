@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS clients (
     id VARCHAR(50) PRIMARY KEY,
     target FLOAT,
-    incomeValue FLOAT,
+    "incomeValue" FLOAT,
     avg_cur_cr_turn FLOAT,
     ovrd_sum FLOAT DEFAULT 0,
     loan_cur_amt FLOAT DEFAULT 0,

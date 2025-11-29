@@ -55,11 +55,11 @@ async def init_db():
                 existing_columns.remove('client_id')
                 existing_columns.add('id')
             
-            # Список необходимых колонок
+            # Список необходимых колонок (incomeValue с кавычками для сохранения регистра)
             required_columns = {
                 'id': 'VARCHAR(50)',
                 'target': 'FLOAT',
-                'incomeValue': 'FLOAT',
+                '"incomeValue"': 'FLOAT',  # С кавычками для сохранения camelCase
                 'avg_cur_cr_turn': 'FLOAT',
                 'ovrd_sum': 'FLOAT DEFAULT 0',
                 'loan_cur_amt': 'FLOAT DEFAULT 0',
@@ -67,9 +67,38 @@ async def init_db():
                 'created_at': 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
             }
             
+            # Проверяем существующие колонки (учитываем регистр)
+            result = conn.execute(text("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'clients'
+            """))
+            existing_columns_lower = {row[0].lower(): row[0] for row in result.fetchall()}
+            existing_columns = {row[0] for row in result.fetchall()}
+            
+            logger.info(f"Существующие колонки в clients: {existing_columns}")
+            
+            # Переименовываем client_id в id если нужно
+            if 'client_id' in existing_columns and 'id' not in existing_columns:
+                logger.info("Migrating: renaming client_id to id...")
+                conn.execute(text("ALTER TABLE clients RENAME COLUMN client_id TO id"))
+                logger.info("✓ Migration completed: client_id -> id")
+                existing_columns.remove('client_id')
+                existing_columns.add('id')
+            
+            # Переименовываем incomevalue в "incomeValue" если нужно
+            if 'incomevalue' in existing_columns_lower and 'incomeValue' not in existing_columns:
+                logger.info("Migrating: renaming incomevalue to incomeValue...")
+                conn.execute(text('ALTER TABLE clients RENAME COLUMN incomevalue TO "incomeValue"'))
+                logger.info("✓ Migration completed: incomevalue -> incomeValue")
+                existing_columns.remove('incomevalue')
+                existing_columns.add('incomeValue')
+            
             # Добавляем недостающие колонки
             for col_name, col_def in required_columns.items():
-                if col_name not in existing_columns:
+                # Проверяем как в нижнем регистре, так и с кавычками
+                col_name_check = col_name.strip('"').lower()
+                if col_name_check not in existing_columns_lower and col_name not in existing_columns:
                     logger.info(f"Adding column {col_name}...")
                     try:
                         conn.execute(text(f"ALTER TABLE clients ADD COLUMN {col_name} {col_def}"))
