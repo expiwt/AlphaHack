@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: alfabank-postgres
+    environment:
+      POSTGRES_USER: alfabank_user
+      POSTGRES_PASSWORD: alfabank_password
+      POSTGRES_DB: alfabank_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - alfabank-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alfabank_user -d alfabank_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: alfabank-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - alfabank-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: alfabank-backend
+    environment:
+      DATABASE_URL: postgresql://alfabank_user:alfabank_password@postgres:5432/alfabank_db
+      REDIS_URL: redis://redis:6379
+      APP_ENV: development
+      DEBUG: "true"
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/models:/app/models
+      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - alfabank-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: >
+      sh -c "
+        sleep 5 &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: alfabank-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - alfabank-network
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: alfabank-adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+    networks:
+      - alfabank-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  alfabank-network:
+    driver: bridge
