@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS clients (
     ovrd_sum FLOAT DEFAULT 0,
     loan_cur_amt FLOAT DEFAULT 0,
     hdb_income_ratio FLOAT,
+    PDN FLOAT, -- Новое поле: Показатель долговой нагрузки
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -74,8 +75,9 @@ BEGIN
     END IF;
 END $$;
 
--- Миграция: Добавить новую колонку если её нет
+-- Миграция: Добавить новые колонки если их нет
 ALTER TABLE clients ADD COLUMN IF NOT EXISTS hdb_income_ratio FLOAT;
+ALTER TABLE clients ADD COLUMN IF NOT EXISTS PDN FLOAT; -- Добавляем PDN
 
 -- Миграция: Удалить неиспользуемые колонки (если они есть)
 DO $$ 
@@ -107,3 +109,4 @@ VALUES
     (CURRENT_DATE, 'MAE', 5234.50, '1.0.0', 'train'),
     (CURRENT_DATE, 'MAE', 6123.75, '1.0.0', 'test')
 ON CONFLICT DO NOTHING;
+

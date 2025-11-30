@@ -35,10 +35,11 @@ class Client(Base):
     ovrd_sum = Column("ovrd_sum", Float, nullable=True, default=0.0)
     loan_cur_amt = Column("loan_cur_amt", Float, nullable=True, default=0.0)
     hdb_income_ratio = Column("hdb_income_ratio", Float, nullable=True)
+    PDN = Column("PDN", Float, nullable=True)  # Новое поле: Показатель долговой нагрузки
     created_at = Column(DateTime, default=datetime.utcnow)
     
     def __repr__(self):
-        return f"<Client(id={self.id}, incomeValue={self.incomeValue})>"
+        return f"<Client(id={self.id}, incomeValue={self.incomeValue}, PDN={self.PDN})>"
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # PREDICTIONS

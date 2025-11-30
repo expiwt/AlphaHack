@@ -1,0 +1,26 @@
+# This is an example configuration file
+# To learn more, see the full config.yaml reference: https://docs.continue.dev/reference
+
+name: Example Config
+version: 1.0.0
+schema: v1
+
+# Define which models can be used
+# https://docs.continue.dev/customization/models
+models:
+  - name: DeepSeek Coder
+    provider: deepseek
+    model: deepseek-chat  # или deepseek-chat, deepseek-r1
+    apiKey: sk-742db3d62e444363a11b6e0247ac771e
+  - uses: ollama/qwen2.5-coder-7b
+  - uses: anthropic/claude-4-sonnet
+    with:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+# MCP Servers that Continue can access
+# https://docs.continue.dev/customization/mcp-tools
+mcpServers:
+  - uses: anthropic/memory-mcp
+
+
+
