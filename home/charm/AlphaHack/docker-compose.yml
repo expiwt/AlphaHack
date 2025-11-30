@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # База данных PostgreSQL
   postgres:
     image: postgres:15-alpine
     container_name: alfabank-postgres
@@ -21,6 +22,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis для кэширования
   redis:
     image: redis:7-alpine
     container_name: alfabank-redis
@@ -37,6 +39,7 @@ services:
       retries: 5
     command: redis-server --appendonly yes
 
+  # Backend API (FastAPI + ML модель)
   backend:
     build:
       context: ./backend
@@ -45,8 +48,8 @@ services:
     environment:
       DATABASE_URL: postgresql://alfabank_user:alfabank_password@postgres:5432/alfabank_db
       REDIS_URL: redis://redis:6379
-      APP_ENV: development
-      DEBUG: "true"
+      APP_ENV: production
+      DEBUG: "false"
       PORT: 8000
     ports:
       - "8000:8000"
@@ -69,23 +72,27 @@ services:
       start_period: 40s
     command: >
       sh -c "
-        sleep 5 &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+        sleep 10 &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000
       "
 
+  # Frontend (React + Vite)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: alfabank-frontend
+    environment:
+      VITE_API_URL: http://178.72.152.189/api/v1
     ports:
-      - "80:80"
+      - "3000:80"
     depends_on:
       - backend
     networks:
       - alfabank-network
     restart: unless-stopped
 
+  # Веб-интерфейс для управления БД
   adminer:
     image: adminer:latest
     container_name: alfabank-adminer
@@ -95,6 +102,26 @@ services:
       - postgres
     networks:
       - alfabank-network
+
+  # Основной Nginx для проксирования
+  nginx:
+    image: nginx:alpine
+    container_name: alfabank-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - alfabank-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
 
 volumes:
   postgres_data:

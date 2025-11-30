@@ -1,4 +1,0 @@
-1. **nginx service removed** - The nginx reverse proxy service has been completely removed
-2. **Frontend port mapping changed** - The frontend service now maps to port 80 instead of port 3000
-
-
