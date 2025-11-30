@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: alfabank_password
       POSTGRES_DB: alfabank_db
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -20,11 +20,13 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     container_name: alfabank-redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -35,6 +37,8 @@ services:
       timeout: 5s
       retries: 5
     command: redis-server --appendonly yes
+    restart: unless-stopped
+
   backend:
     build:
       context: ./backend
@@ -43,15 +47,9 @@ services:
     environment:
       DATABASE_URL: postgresql://alfabank_user:alfabank_password@postgres:5432/alfabank_db
       REDIS_URL: redis://redis:6379
-      APP_ENV: development
-      DEBUG: "true"
+      APP_ENV: production
+      DEBUG: "false"
       PORT: 8000
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend/app:/app/app
-      - ./backend/models:/app/models
-      - ./data:/app/data
     depends_on:
       postgres:
         condition: service_healthy
@@ -68,16 +66,17 @@ services:
     command: >
       sh -c "
         sleep 5 &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+        uvicorn app.main:app --host 0.0.0.0 --port 8000
       "
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: alfabank-frontend
-    ports:
-      - "3000:80"
+    environment:
+      VITE_API_URL: http://178.72.152.189/api/v1
     depends_on:
       - backend
     networks:
@@ -88,17 +87,19 @@ services:
     image: adminer:latest
     container_name: alfabank-adminer
     ports:
-      - "8081:8080"
+      - "127.0.0.1:8081:8080"
     depends_on:
       - postgres
     networks:
       - alfabank-network
+    restart: unless-stopped
 
   nginx:
     image: nginx:alpine
     container_name: alfabank-nginx
     ports:
-      - "8080:80"
+      - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
@@ -106,11 +107,6 @@ services:
       - backend
     networks:
       - alfabank-network
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
     restart: unless-stopped
 
 volumes:
